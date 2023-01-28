@@ -9,6 +9,7 @@ const {
   getFollowers,
   getFollowing,
   followUser,
+  unfollowUser,
 } = require("../controllers/user.controller");
 
 // get all user route
@@ -30,6 +31,6 @@ router.get("/:username/followings", verfiyUser, getFollowing);
 router.post("/:username/follow", verfiyUser, followUser);
 
 // unfollow user
-router.delete("/:username/unfollow");
+router.delete("/:username/unfollow", verfiyUser, unfollowUser);
 
 module.exports = router;

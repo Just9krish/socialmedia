@@ -79,7 +79,6 @@ async function deleteSingleUser(req, res) {
 async function getFollowers(req, res) {
   const { username } = req.params;
 
-  console.log(username);
   const user = await User.findOne({ username: username });
 
   if (!user) {
@@ -151,6 +150,36 @@ async function followUser(req, res) {
   });
 }
 
+// unfollow user
+async function unfollowUser(req, res) {
+  try {
+    const currentUser = req.user;
+
+    const unfollowUsername = req.params.username;
+
+    let userToUnfollow = await User.findOne({ username: unfollowUsername });
+
+    if (!userToUnfollow) {
+      return res.status(404).send({ error: "User not found" });
+    }
+
+    currentUser.following.pull(userToUnfollow._id);
+
+    userToUnfollow.followers.pull(currentUser._id);
+
+    userToUnfollow = await currentUser.save();
+    userToUnfollow = await userToUnfollow.save();
+
+    return res.status(200).send({
+      success: true,
+      message: "Successfully unfollowed user",
+      result: userToUnfollow,
+    });
+  } catch (error) {
+    return res.status(500).send({ error: error.message });
+  }
+}
+
 module.exports = {
   getAllUser,
   createUser,
@@ -159,4 +188,5 @@ module.exports = {
   getFollowers,
   getFollowing,
   followUser,
+  unfollowUser,
 };
