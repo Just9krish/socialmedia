@@ -1,11 +1,9 @@
 const express = require("express");
 const router = express.Router();
+const { verfiyUser } = require("../authenticate");
 
 const {
   getAllUser,
-  createUser,
-  updateOnUsersNotAllowed,
-  deleteOnUserNotallowed,
   getSingleUser,
   deleteSingleUser,
   getFollowers,
@@ -14,30 +12,24 @@ const {
 } = require("../controllers/user.controller");
 
 // get all user route
-router.get("/", getAllUser);
-
-// create a user route
-router.post("/", createUser);
-
-// update
-router.put("/", updateOnUsersNotAllowed);
-
-// delete users
-router.delete("/", deleteOnUserNotallowed);
+router.get("/", verfiyUser, getAllUser);
 
 // get a specify user
-router.get("/:userId", getSingleUser);
+router.get("/:username", verfiyUser, getSingleUser);
 
 // delete a specify user
-router.delete("/:userId", deleteSingleUser);
+router.delete("/:username", verfiyUser, deleteSingleUser);
 
 // get followers of user
-router.get("/:userId/followers", getFollowers);
+router.get("/:username/followers", verfiyUser, getFollowers);
 
 // get followings of user
-router.get("/:userId/followings", getFollowing);
+router.get("/:username/followings", verfiyUser, getFollowing);
 
 // add follower to user
-router.post("/:userId/follow", followUser);
+router.post("/:username/follow", verfiyUser, followUser);
+
+// unfollow user
+router.delete("/:username/unfollow");
 
 module.exports = router;

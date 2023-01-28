@@ -2,8 +2,10 @@ require("dotenv").config();
 const express = require("express");
 const mongoose = require("mongoose");
 const morgan = require("morgan");
+const passport = require("passport");
 
 const userRouter = require("./routes/users.routes");
+const authRouter = require("./routes/auth.routes");
 
 // initialise express app
 const app = express();
@@ -28,8 +30,12 @@ mongoose
     console.log(err);
   });
 
+app.use(passport.initialize());
+
 app.get("/", (req, res) => {
   res.send("home page");
 });
+
+app.use("/auth", authRouter);
 
 app.use("/users", userRouter);
