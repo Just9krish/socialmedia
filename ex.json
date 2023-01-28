@@ -1,0 +1,7 @@
+{
+    "username": "johndoe",
+    "password": "1234",
+    "followers": ["5f4dcc3b5aa7651b97f00b02", "5f4dcc3b5aa7651b97f00b03"],
+    "following": ["5f4dcc3b5aa7651b97f00b04", "5f4dcc3b5aa7651b97f00b05"],
+    "posts": ["5f4dcc3b5aa7651b97f00b06", "5f4dcc3b5aa7651b97f00b07"]
+}
