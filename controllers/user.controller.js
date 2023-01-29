@@ -5,7 +5,7 @@ const Follower = require("../models/follower.model");
 // get all user controller
 async function getAllUser(req, res) {
   try {
-    const users = await User.find();
+    const users = await User.find().populate("followers", "followings");
     if (!users) {
       return res.status(404).json({ success: false, error: "No users found" });
     }
@@ -15,35 +15,19 @@ async function getAllUser(req, res) {
   }
 }
 
-async function createUser(req, res) {
-  try {
-    const user = await User.create(req.body);
-    res.status(200).json({ success: true, result: user });
-  } catch (err) {
-    res.status(400).json({
-      success: false,
-      message: "User is successfully created",
-      error: err.message,
-    });
-  }
-}
-
 // get user
 async function getSingleUser(req, res) {
-  const userId = req.params.userId;
+  const { username } = req.params;
 
-  if (!mongoose.Types.ObjectId.isValid(userId)) {
-    return res
-      .status(404)
-      .json({ success: false, error: `No such user with given id ${userId}` });
-  }
-
-  const user = await User.findById(userId);
+  const user = await User.findOne({ username: username }).populate(
+    "followers",
+    "followings"
+  );
 
   if (!user) {
     return res.status(404).json({
       success: false,
-      error: `Cannot find the user with given id ${userId}`,
+      error: `Cannot find the user with given username ${username}`,
     });
   }
   res.status(200).json({ success: true, result: user });
@@ -51,20 +35,14 @@ async function getSingleUser(req, res) {
 
 // delete user
 async function deleteSingleUser(req, res) {
-  const userId = req.params.userId;
+  const { username } = req.params;
 
-  if (!mongoose.Types.ObjectId.isValid(userId)) {
-    return res
-      .status(404)
-      .json({ success: false, error: `No such user with given id ${userId}` });
-  }
-
-  const user = await User.findOneAndDelete(userId);
+  const user = await User.findOneAndDelete({ username: username });
 
   if (!user) {
     return res.status(404).json({
       success: false,
-      error: `Cannot find the user with given id ${userId}`,
+      error: `Cannot find the user with given id ${username}`,
     });
   }
 
@@ -79,7 +57,7 @@ async function deleteSingleUser(req, res) {
 async function getFollowers(req, res) {
   const { username } = req.params;
 
-  const user = await User.findOne({ username: username });
+  const user = await User.findOne({ username: username }).populate("followers");
 
   if (!user) {
     return res.status(404).json({
@@ -98,7 +76,9 @@ async function getFollowers(req, res) {
 async function getFollowing(req, res) {
   const { username } = req.params;
 
-  const user = await User.findOne({ username: username });
+  const user = await User.findOne({ username: username }).populate(
+    "followings"
+  );
 
   if (!user) {
     return res.status(404).json({
@@ -109,80 +89,81 @@ async function getFollowing(req, res) {
 
   res.status(200).json({
     success: true,
-    result: user.following,
+    result: user.followings,
   });
 }
 
+// follow a user
 async function followUser(req, res) {
   const currentUserId = req.user._id;
   const { username } = req.params;
 
-  let user = await User.findOne({ username: username });
+  try {
+    let user = await User.findOne({ username: username });
+    let followingUser = await User.findOne({ _id: currentUserId });
 
-  if (!user) {
-    return res.status(500).json({ success: false, message: "User not found" });
-  }
+    if (!user) {
+      return res
+        .status(404)
+        .json({ success: false, message: "User not found" });
+    }
 
-  user.followers.push(currentUserId);
+    user.followers.push(currentUserId);
+    followingUser.followings.push(user._id);
 
-  user = await user.save();
+    user = await user.save();
+    followingUser = await followingUser.save();
 
-  if (!user) {
-    res.status(500).json({ success: false, message: "Error saving user" });
-  }
+    // const follower = await Follower.create({
+    //   follower: currentUserId,
+    //   following: user._id,
+    // });
 
-  const follower = await Follower.create({
-    follower: currentUserId,
-    following: user._id,
-  });
+    // if (!follower) {
+    //   res.status(500).json({
+    //     success: false,
+    //     message: "Error creating follower relationship",
+    //   });
+    // }
 
-  if (!follower) {
-    res.status(500).json({
-      success: false,
-      message: "Error creating follower relationship",
+    res.status(200).json({
+      success: true,
+      message: "Successfully followed user",
     });
+  } catch (err) {
+    res.status(500).json({ success: false, error: err.message });
   }
-
-  res.status(200).json({
-    success: true,
-    message: "Successfully followed user",
-    result: user,
-  });
 }
 
 // unfollow user
 async function unfollowUser(req, res) {
+  const { username } = req.params;
+  const currentUserId = req.user._id;
+
   try {
-    const currentUser = req.user;
+    let user = await User.findOne({ username: username });
+    let unfollowingUser = await User.findOne({ _id: currentUserId });
 
-    const unfollowUsername = req.params.username;
-
-    let userToUnfollow = await User.findOne({ username: unfollowUsername });
-
-    if (!userToUnfollow) {
-      return res.status(404).send({ error: "User not found" });
+    if (!user) {
+      return res.status(404).json({ success: false, error: "User not found" });
     }
 
-    currentUser.following.pull(userToUnfollow._id);
+    unfollowingUser.followings.pull(user._id);
+    user.followers.pull(unfollowingUser._id);
 
-    userToUnfollow.followers.pull(currentUser._id);
+    unfollowingUser = await unfollowingUser.save();
+    user = await user.save();
 
-    userToUnfollow = await currentUser.save();
-    userToUnfollow = await userToUnfollow.save();
-
-    return res.status(200).send({
-      success: true,
-      message: "Successfully unfollowed user",
-      result: userToUnfollow,
-    });
+    res
+      .status(200)
+      .json({ success: true, message: "Successfully unfollowed user" });
   } catch (error) {
-    return res.status(500).send({ error: error.message });
+    res.status(500).json({ success: false, error: error.message });
   }
 }
 
 module.exports = {
   getAllUser,
-  createUser,
   getSingleUser,
   deleteSingleUser,
   getFollowers,

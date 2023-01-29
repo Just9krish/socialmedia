@@ -27,7 +27,7 @@ router.get("/:username/followers", verfiyUser, getFollowers);
 // get followings of user
 router.get("/:username/followings", verfiyUser, getFollowing);
 
-// add follower to user
+// follow to user
 router.post("/:username/follow", verfiyUser, followUser);
 
 // unfollow user

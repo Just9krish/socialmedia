@@ -13,12 +13,20 @@ router.post("/signup", (req, res, next) => {
       if (err) {
         res.status(500).json({ success: false, error: err.message });
       } else {
-        passport.authenticate("local")(req, res, () => {
-          res.status(200).json({
-            success: true,
-            message: "Register successfully!",
-            result: user,
-          });
+        if (req.body.name) {
+          user.name = req.body.name;
+        }
+        user.save((err, user) => {
+          if (err) {
+            res.status(500).json({ error: err.message });
+          } else {
+            passport.authenticate("local")(req, res, () => {
+              res.status(200).json({
+                success: true,
+                message: "Register successfully!",
+              });
+            });
+          }
         });
       }
     }
